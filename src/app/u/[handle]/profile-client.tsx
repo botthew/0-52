@@ -9,6 +9,7 @@ import { fetchUserPosts, uploadPost } from "@/lib/apiStore";
 import { exportProfileGridPng } from "@/lib/exportGrid";
 import { calculateStreak, calculateCompletion } from "@/lib/stats";
 import PhotoLightbox from "@/components/PhotoLightbox";
+import PhotoImage from "@/components/PhotoImage";
 
 function Tile({
   week,
@@ -43,11 +44,11 @@ function Tile({
       title={imgSrc ? `View week ${weekLabel(week)}` : editable ? `Upload week ${weekLabel(week)}` : `Week ${weekLabel(week)}`}
     >
       {imgSrc ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <PhotoImage
           src={imgSrc}
           alt={`Week ${weekLabel(week)}`}
-          className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+          sizes="(max-width: 640px) 22vw, (max-width: 1024px) 16vw, 120px"
+          className="transition-transform group-hover:scale-[1.02]"
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center bg-zinc-100">

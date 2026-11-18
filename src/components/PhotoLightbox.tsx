@@ -3,6 +3,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { weekLabel, getWeekDateRange, formatDateRange } from "@/lib/weeks";
 import { type WeeklyPost, getImageSrc } from "@/lib/types";
+import PhotoImage from "@/components/PhotoImage";
 
 interface PhotoLightboxProps {
   post: WeeklyPost;
@@ -15,6 +16,7 @@ export default function PhotoLightbox({ post, year, onClose }: PhotoLightboxProp
 
   const { start, end } = getWeekDateRange(year, post.week);
   const dateRange = formatDateRange(start, end);
+  const imageSrc = getImageSrc(post);
 
   // Request fullscreen on mount (mobile landscape)
   useEffect(() => {
@@ -58,6 +60,14 @@ export default function PhotoLightbox({ post, year, onClose }: PhotoLightboxProp
     };
   }, []);
 
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
   // Close on escape
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -88,13 +98,13 @@ export default function PhotoLightbox({ post, year, onClose }: PhotoLightboxProp
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95"
+      className="fixed inset-0 z-50 flex h-dvh w-full flex-col bg-zinc-950 px-4 pb-6 pt-14"
       onClick={handleBackdropClick}
     >
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2 text-white backdrop-blur hover:bg-white/20"
+        className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2.5 text-white backdrop-blur hover:bg-white/20"
         aria-label="Close"
       >
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -102,32 +112,25 @@ export default function PhotoLightbox({ post, year, onClose }: PhotoLightboxProp
         </svg>
       </button>
 
-      {/* Image container */}
-      <div className="flex h-full w-full flex-col items-center justify-center p-4">
-        {/* Image */}
-        <div className="relative max-h-[80vh] max-w-[95vw] overflow-hidden rounded-lg">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={getImageSrc(post)}
+      <div className="relative min-h-0 w-full flex-1">
+        {imageSrc && (
+          <PhotoImage
+            src={imageSrc}
             alt={`Week ${weekLabel(post.week)}`}
-            className="max-h-[80vh] max-w-[95vw] object-contain"
+            sizes="100vw"
+            fit="contain"
           />
-        </div>
+        )}
+      </div>
 
-        {/* Details */}
-        <div className="mt-4 text-center">
-          <div className="text-lg font-semibold text-white">
-            Week {weekLabel(post.week)}
-          </div>
-          <div className="mt-1 text-sm text-white/70">
-            {dateRange}
-          </div>
-          {post.caption && (
-            <div className="mt-1 text-sm text-white/50">
-              {post.caption}
-            </div>
-          )}
+      <div className="shrink-0 pt-4 text-center">
+        <div className="text-lg font-semibold text-white">
+          Week {weekLabel(post.week)}
         </div>
+        <div className="mt-1 text-sm text-white/70">{dateRange}</div>
+        {post.caption && (
+          <div className="mt-1 text-sm text-white/50">{post.caption}</div>
+        )}
       </div>
     </div>
   );

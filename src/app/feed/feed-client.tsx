@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchGlobalFeed } from "@/lib/apiStore";
 import { type WeeklyPost, getImageSrc } from "@/lib/types";
+import PhotoImage from "@/components/PhotoImage";
 
 function ProgressBar({ count, total = 52 }: { count: number; total?: number }) {
   const pct = Math.min(100, (count / total) * 100);
@@ -20,18 +21,18 @@ function ProgressBar({ count, total = 52 }: { count: number; total?: number }) {
   );
 }
 
-function Card({ post }: { post: WeeklyPost }) {
+function Card({ post, priority = false }: { post: WeeklyPost; priority?: boolean }) {
   const imgSrc = getImageSrc(post);
-  
+
   return (
     <article className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-      <div className="aspect-video w-full bg-zinc-100">
+      <div className="relative aspect-video w-full bg-zinc-100">
         {imgSrc && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <PhotoImage
             src={imgSrc}
             alt={`@${post.handle} week ${post.week}`}
-            className="h-full w-full object-cover"
+            sizes="(max-width: 640px) 100vw, 480px"
+            priority={priority}
           />
         )}
       </div>
@@ -84,8 +85,8 @@ export default function FeedClient() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {posts.map((p) => (
-        <Card key={p.id} post={p} />
+      {posts.map((p, index) => (
+        <Card key={p.id} post={p} priority={index === 0} />
       ))}
     </div>
   );

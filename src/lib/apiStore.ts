@@ -4,6 +4,17 @@ import type { WeeklyPost } from "@/lib/types";
 
 const API_BASE = "/api";
 
+async function imageForUpload(file: File): Promise<File> {
+  try {
+    const { fileToLandscapeBlob } = await import("./imageCrop");
+    const blob = await fileToLandscapeBlob(file);
+    return new File([blob], "week.jpg", { type: "image/jpeg" });
+  } catch (error) {
+    console.error("Could not resize photo, uploading the original", error);
+    return file;
+  }
+}
+
 // Check if we're in dev/localStorage mode
 function isLocalMode(): boolean {
   return typeof window !== "undefined" && 
@@ -78,7 +89,7 @@ export async function uploadPost(input: {
   const formData = new FormData();
   formData.append("year", input.year.toString());
   formData.append("week", input.week.toString());
-  formData.append("image", input.imageFile);
+  formData.append("image", await imageForUpload(input.imageFile));
   if (input.caption) formData.append("caption", input.caption);
 
   const res = await fetch(`${API_BASE}/posts`, {

@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { currentSlotEt } from "@/lib/weekTime";
 
 // GET /api/feed - Get global feed (recent posts)
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const limitStr = searchParams.get("limit");
-  const limit = limitStr ? Math.min(50, parseInt(limitStr)) : 20;
-  const currentYear = new Date().getFullYear();
+  const parsedLimit = limitStr ? Number.parseInt(limitStr, 10) : 20;
+  const limit = Number.isInteger(parsedLimit) ? Math.min(50, Math.max(1, parsedLimit)) : 20;
+  const { year: currentYear } = currentSlotEt();
 
   const posts = await prisma.weeklyPost.findMany({
     take: limit,

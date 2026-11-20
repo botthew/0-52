@@ -3,30 +3,30 @@
 import { type WeeklyPost, getImageSrc } from "@/lib/types";
 import { WEEKS_PER_YEAR, weekLabel } from "@/lib/weeks";
 
-async function loadImage(src: string): Promise<HTMLImageElement> {
-  // For remote URLs, fetch as blob and convert to data URL to avoid CORS canvas tainting
-  if (src.startsWith("http")) {
-    try {
-      const response = await fetch(src);
-      const blob = await response.blob();
-      const dataUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-      return loadImage(dataUrl); // Recurse with data URL
-    } catch (e) {
-      console.error("Failed to fetch image:", e);
-      throw e;
+function loadableSrc(src: string): string {
+  try {
+    const url = new URL(src);
+    if (
+      url.protocol === "https:" &&
+      url.hostname.endsWith(".fly.storage.tigris.dev") &&
+      url.pathname.startsWith("/posts/")
+    ) {
+      // Same-origin optimizer URL. The storage host does not send CORS headers, so a direct fetch taints the canvas.
+      return `/_next/image?url=${encodeURIComponent(src)}&w=384&q=75`;
     }
+  } catch {
+    // Relative or data URL.
   }
-  
-  // For data URLs, load directly
+  return src;
+}
+
+async function loadImage(src: string): Promise<HTMLImageElement> {
+  const resolved = loadableSrc(src);
   return await new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
+    img.onerror = () => reject(new Error("Could not load photo"));
+    img.src = resolved;
   });
 }
 
@@ -66,7 +66,7 @@ export async function exportProfileGridPng(opts: {
 
   ctx.fillStyle = "#71717a";
   ctx.font = "500 12px system-ui, -apple-system, Segoe UI, Roboto";
-  ctx.fillText(`${year} — 0/52`, pad, pad + 46);
+  ctx.fillText(`${opts.posts.length} of 52 · ${year}`, pad, pad + 46);
 
   const byWeek = new Map<number, WeeklyPost>();
   for (const p of opts.posts) byWeek.set(p.week, p);
@@ -134,7 +134,8 @@ export async function exportProfileGridPng(opts: {
     type: "image/png",
   });
 
-  if (navigator.share && (navigator as any).canShare?.({ files: [file] })) {
+  const canShare = "canShare" in navigator && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] });
+  if (navigator.share && canShare) {
     await navigator.share({
       title: `@${opts.handle} — ${year}`,
       files: [file],

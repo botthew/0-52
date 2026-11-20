@@ -21,8 +21,8 @@ A minimalist photo journal app where you capture one moment each week. No likes,
 - **Framework:** Next.js 16 (App Router)
 - **Styling:** Tailwind CSS
 - **Hosting:** Fly.io
-- **Storage:** localStorage (dev) → Postgres + Tigris (planned)
-- **Auth:** Dev-mode cookies → Resend magic links (planned)
+- **Storage:** Postgres + Tigris
+- **Auth:** Handle cookie (no password) → Resend magic links (planned)
 
 ## Development
 
@@ -49,14 +49,11 @@ flyctl deploy --remote-only
 | Variable | Description |
 |----------|-------------|
 | `NEXT_PUBLIC_ANY_WEEK_PICK` | Set to `1` to enable uploading to any week (testing) |
-| `UPSTASH_REDIS_REST_URL` | Upstash Redis URL for view tracking (optional) |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis token (optional) |
 
 ## Roadmap
 
 - [ ] Resend magic link authentication
 - [ ] Postgres + Tigris for persistent storage
-- [ ] Photo view counters (Upstash Redis)
 - [ ] PWA with offline support
 - [ ] Push notifications for weekly reminders
 

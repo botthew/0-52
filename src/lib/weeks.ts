@@ -31,7 +31,7 @@ export function getWeekDateRange(year: number, week: number): { start: Date; end
 }
 
 export function formatDateRange(start: Date, end: Date): string {
-  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", timeZone: "UTC" };
   const startStr = start.toLocaleDateString("en-US", opts);
   const endStr = end.toLocaleDateString("en-US", { ...opts, year: "numeric" });
   return `${startStr} – ${endStr}`;

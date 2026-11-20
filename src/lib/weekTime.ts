@@ -62,28 +62,8 @@ export function activeWeekEt(options?: { graceMondayNoon?: boolean }) {
   return isoWeekNumber(et);
 }
 
-/**
- * Get current week of the year (1-52) for display in wordmark.
- * Updates every Sunday at midnight ET (Sunday-start week).
- */
-export function getCurrentWeekET(): number {
-  const et = nowInEt();
-  const year = et.getUTCFullYear();
-  
-  // Get Jan 1 of current year
-  const jan1 = new Date(Date.UTC(year, 0, 1));
-  
-  // Find what day of week Jan 1 is (0=Sun, 6=Sat)
-  const jan1Day = jan1.getUTCDay();
-  
-  // Calculate days since the Sunday on or before Jan 1
-  // (This gives us week 1 starting from the first Sunday of the year or Dec of prev year)
-  const daysSinceYearStart = Math.floor((et.getTime() - jan1.getTime()) / (24 * 60 * 60 * 1000));
-  
-  // Week number: (days since Jan 1 + day offset for Jan 1) / 7, rounded up
-  // Add jan1Day to account for partial first week
-  const weekNum = Math.floor((daysSinceYearStart + jan1Day) / 7) + 1;
-  
-  // Clamp to 1-52
-  return Math.min(52, Math.max(1, weekNum));
+/** Week shown in the wordmark and used for uploads, including Monday-morning grace. */
+export function currentSlotEt(): { year: number; week: number } {
+  const { year, week } = activeWeekEt({ graceMondayNoon: true });
+  return { year, week: Math.min(52, Math.max(1, week)) };
 }

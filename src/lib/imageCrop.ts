@@ -36,13 +36,3 @@ export async function fileToLandscapeBlob(file: File, aspect = 16 / 9): Promise<
     bitmap.close?.();
   }
 }
-
-export async function fileToLandscapeDataUrl(file: File, aspect = 16 / 9) {
-  const blob = await fileToLandscapeBlob(file, aspect);
-  return await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error ?? new Error("Could not read photo"));
-    reader.readAsDataURL(blob);
-  });
-}

@@ -1,17 +1,15 @@
 export type WeeklyPost = {
   id: string;
   handle: string;
-  year: number; // e.g. 2026
-  week: number; // 1-52
-  imageUrl?: string; // Tigris URL (production)
-  imageDataUrl?: string; // base64 data URL (localStorage fallback)
+  year: number;
+  week: number;
+  imageUrl?: string;
   caption?: string;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
-  userProgress?: number; // posts count for current year (feed only)
+  createdAt: string;
+  updatedAt: string;
+  userProgress?: number;
 };
 
-// Helper to get the displayable image source
 export function getImageSrc(post: WeeklyPost): string | undefined {
-  return post.imageUrl || post.imageDataUrl;
+  return post.imageUrl;
 }

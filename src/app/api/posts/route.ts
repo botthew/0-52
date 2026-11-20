@@ -2,6 +2,17 @@ import { NextResponse } from "next/server";
 import { getServerUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadImage, deleteImage, generateImageKey } from "@/lib/tigris";
+import { currentSlotEt } from "@/lib/weekTime";
+
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const ALLOWED_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/heic",
+  "image/heif",
+]);
 
 // GET /api/posts - Get posts for a user
 export async function GET(req: Request) {
@@ -13,11 +24,19 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Missing handle" }, { status: 400 });
   }
 
+  let yearNumber: number | undefined;
+  if (year) {
+    yearNumber = Number.parseInt(year, 10);
+    if (!Number.isInteger(yearNumber) || yearNumber < 2000 || yearNumber > 2100) {
+      return NextResponse.json({ error: "That year is not valid." }, { status: 400 });
+    }
+  }
+
   const user = await prisma.user.findUnique({
     where: { handle },
     include: {
-      posts: year
-        ? { where: { year: parseInt(year) }, orderBy: { week: "asc" } }
+      posts: yearNumber
+        ? { where: { year: yearNumber }, orderBy: { week: "asc" } }
         : { orderBy: [{ year: "desc" }, { week: "asc" }] },
     },
   });
@@ -62,15 +81,37 @@ export async function POST(req: Request) {
   const imageFile = formData.get("image") as File | null;
   const caption = formData.get("caption") as string | null;
 
-  const year = parseInt(yearStr);
-  const week = parseInt(weekStr);
+  const year = Number.parseInt(yearStr, 10);
+  const week = Number.parseInt(weekStr, 10);
 
-  if (!year || !week || week < 1 || week > 52) {
-    return NextResponse.json({ error: "Invalid year or week" }, { status: 400 });
+  if (!Number.isInteger(year) || year < 2000 || year > 2100 || !Number.isInteger(week) || week < 1 || week > 52) {
+    return NextResponse.json({ error: "That year or week is not valid." }, { status: 400 });
   }
 
-  if (!imageFile) {
-    return NextResponse.json({ error: "Missing image" }, { status: 400 });
+  if (!(imageFile instanceof File)) {
+    return NextResponse.json({ error: "Choose a photo to upload." }, { status: 400 });
+  }
+
+  if (imageFile.type && !ALLOWED_TYPES.has(imageFile.type)) {
+    return NextResponse.json({ error: "Use a JPEG, PNG, or WebP photo." }, { status: 400 });
+  }
+
+  if (imageFile.size > MAX_IMAGE_BYTES) {
+    return NextResponse.json({ error: "That photo is larger than 8 MB." }, { status: 400 });
+  }
+
+  const anyWeek =
+    process.env.ANY_WEEK_PICK === "1" ||
+    process.env.NEXT_PUBLIC_ANY_WEEK_PICK === "1" ||
+    process.env.NEXT_PUBLIC_ANY_WEEK_PICK === "true";
+  if (!anyWeek) {
+    const active = currentSlotEt();
+    if (year !== active.year || week !== active.week) {
+      return NextResponse.json(
+        { error: "You can only change the photo for the current week." },
+        { status: 403 },
+      );
+    }
   }
 
   // Get or create user in DB

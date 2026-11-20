@@ -1,92 +1,126 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { fetchGlobalFeed } from "@/lib/apiStore";
 import { type WeeklyPost, getImageSrc } from "@/lib/types";
+import { weekLabel } from "@/lib/weeks";
 import PhotoImage from "@/components/PhotoImage";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardFooter } from "@/components/ui/card";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Skeleton } from "@/components/ui/skeleton";
 
-function ProgressBar({ count, total = 52 }: { count: number; total?: number }) {
-  const pct = Math.min(100, (count / total) * 100);
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="h-1 w-12 rounded-full bg-zinc-200 overflow-hidden">
-        <div
-          className="h-full bg-zinc-900 rounded-full transition-all"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="text-[10px] text-zinc-400">{count}/52</span>
-    </div>
-  );
+function formatUpdated(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function Card({ post, priority = false }: { post: WeeklyPost; priority?: boolean }) {
+function CardView({ post, priority = false }: { post: WeeklyPost; priority?: boolean }) {
   const imgSrc = getImageSrc(post);
 
   return (
-    <article className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-      <div className="relative aspect-video w-full bg-zinc-100">
+    <Card className="gap-0 py-0">
+      <Link href={`/u/${post.handle}`} className="relative block aspect-video bg-muted">
         {imgSrc && (
           <PhotoImage
             src={imgSrc}
-            alt={`@${post.handle} week ${post.week}`}
+            alt={`@${post.handle}, week ${post.week}`}
             sizes="(max-width: 640px) 100vw, 480px"
             priority={priority}
           />
         )}
-      </div>
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3 text-sm">
-          <Link className="font-medium hover:underline" href={`/u/${post.handle}`}>
+      </Link>
+      <CardFooter className="items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <Link className="font-medium underline-offset-4 hover:underline" href={`/u/${post.handle}`}>
             @{post.handle}
           </Link>
-          <ProgressBar count={post.userProgress ?? 0} />
+          <p className="text-muted-foreground">
+            Week {weekLabel(post.week)}
+            {typeof post.userProgress === "number" ? ` · ${post.userProgress} of 52` : ""}
+          </p>
         </div>
-        <time className="text-xs text-zinc-400">
-          {new Date(post.updatedAt).toLocaleDateString()}
+        <time className="shrink-0 text-muted-foreground" dateTime={post.updatedAt}>
+          {formatUpdated(post.updatedAt)}
         </time>
-      </div>
-    </article>
+      </CardFooter>
+    </Card>
   );
 }
 
 export default function FeedClient() {
   const [posts, setPosts] = useState<WeeklyPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
-  useEffect(() => {
-    const loadFeed = async () => {
-      try {
-        const feedPosts = await fetchGlobalFeed();
-        setPosts(feedPosts);
-      } catch (e) {
-        console.error("Failed to load feed:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadFeed();
+  const loadFeed = useCallback(async () => {
+    setStatus("loading");
+    try {
+      setPosts(await fetchGlobalFeed());
+      setStatus("ready");
+    } catch (error) {
+      console.error("Failed to load feed:", error);
+      setStatus("error");
+    }
   }, []);
 
-  if (loading) {
+  useEffect(() => {
+    let cancelled = false;
+    fetchGlobalFeed()
+      .then((feedPosts) => {
+        if (cancelled) return;
+        setPosts(feedPosts);
+        setStatus("ready");
+      })
+      .catch((error) => {
+        console.error("Failed to load feed:", error);
+        if (!cancelled) setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (status === "loading") {
     return (
-      <div className="text-sm text-zinc-500">Loading...</div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Skeleton className="aspect-video w-full" />
+        <Skeleton className="aspect-video w-full" />
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>The feed did not load.</AlertTitle>
+        <AlertDescription>Check your connection, then try again.</AlertDescription>
+        <div className="col-span-full pt-2">
+          <Button type="button" variant="outline" size="sm" onClick={loadFeed}>
+            Try again
+          </Button>
+        </div>
+      </Alert>
     );
   }
 
   if (posts.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-zinc-300 bg-white p-6 text-sm text-zinc-600">
-        No posts yet. Go to your profile and upload a week.
-      </div>
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>No photos yet</EmptyTitle>
+          <EmptyDescription>When someone saves a week, it shows up here.</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {posts.map((p, index) => (
-        <Card key={p.id} post={p} priority={index === 0} />
+      {posts.map((post, index) => (
+        <CardView key={post.id} post={post} priority={index === 0} />
       ))}
     </div>
   );

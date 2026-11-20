@@ -2,10 +2,10 @@ import FeedClient from "./feed-client";
 
 export default function FeedPage() {
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">Global feed</h1>
-        <p className="text-sm text-zinc-600">Latest updates across all users.</p>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-xl font-semibold tracking-tight">Feed</h1>
+        <p className="text-sm text-muted-foreground">The newest photos from everyone on 0/52.</p>
       </div>
       <FeedClient />
     </div>

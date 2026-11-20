@@ -12,9 +12,9 @@ https://github.com/botthew/0-52
 ## Key Paths
 - `/data/.openclaw/workspace/oneper` — project root
 - `src/app/u/[handle]/profile-client.tsx` — main profile grid component
-- `src/lib/clientStore.ts` — localStorage data management
+- `src/lib/apiStore.ts` — profile and feed requests
 - `src/lib/weekTime.ts` — week calculations with ET timezone
-- `src/lib/stats.ts` — streak/completion calculations + Upstash Redis
+- `src/lib/stats.ts` — streak calculation
 
 ## Week Logic
 - Week boundary: Monday 12:00am ET to Sunday 11:59pm ET (ISO weeks)
@@ -33,7 +33,6 @@ https://github.com/botthew/0-52
 - ✅ Streaks + completion on profiles (not feed)
 - ✅ OG meta tags + social image
 - ✅ Git repo initialized, pushed to GitHub
-- 🔲 Upstash Redis for view tracking
 - 🔲 Resend magic link auth
 - 🔲 Postgres + Tigris persistent storage
 
